@@ -1,0 +1,293 @@
+<!--
+╔══════════════════════════════════════════════════════════════╗
+║  TracoLoop — Gerador de Traços Visuais                     ║
+║  Arquivo único HTML auto-contido                           ║
+║  Abra diretamente no navegador                             ║
+╚══════════════════════════════════════════════════════════════╝
+-->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TraçoLoop — Evolução dos seus traços ao longo do tempo</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#09090f;--s:#111118;--b:#1c1c2a;--a:#38bdf8;--a2:#7dd3fc;--t:#e8eaf6;--m:#5c5c7a;--r:10px;--g:#34d399;--w:#f59e0b}
+body{background:var(--bg);color:var(--t);font-family:system-ui,sans-serif;min-height:100vh;padding:20px}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;letter-spacing:-.03em;margin-bottom:8px}
+.sub{color:var(--m);font-size:.9rem;line-height:1.6;margin-bottom:32px}
+.accent{background:linear-gradient(135deg,var(--a),var(--a2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* TABS */
+.tabs{display:flex;gap:8px;margin-bottom:28px;border-bottom:1px solid var(--b);padding-bottom:0}
+.tab{padding:10px 18px;font-size:.85rem;cursor:pointer;border:none;background:none;color:var(--m);border-bottom:2px solid transparent;transition:color .2s,border-color .2s;font-family:inherit}
+.tab.active{color:var(--a);border-bottom-color:var(--a)}
+.pane{display:none}.pane.active{display:block;animation:fadeUp .35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* FORM CHECK-IN */
+.checkin-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}
+@media(max-width:540px){.checkin-grid{grid-template-columns:1fr}}
+.field label{display:block;font-size:.72rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--m);margin-bottom:8px}
+.range-wrap{display:flex;align-items:center;gap:12px}
+input[type=range]{flex:1;accent-color:var(--a);cursor:pointer}
+.range-val{font-size:1rem;font-weight:700;color:var(--a);width:28px;text-align:center}
+textarea{width:100%;background:var(--s);border:1px solid var(--b);border-radius:var(--r);color:var(--t);font-family:inherit;font-size:.88rem;padding:12px;resize:vertical;min-height:80px;grid-column:1/-1}
+textarea:focus{outline:none;border-color:var(--a)}
+.date-row{display:flex;gap:12px;align-items:flex-end;margin-bottom:20px}
+input[type=date]{background:var(--s);border:1px solid var(--b);border-radius:var(--r);color:var(--t);font-family:inherit;font-size:.88rem;padding:10px 14px;cursor:pointer}
+input[type=date]:focus{outline:none;border-color:var(--a)}
+.btn{background:linear-gradient(135deg,var(--a),#0284c7);color:#fff;border:none;padding:11px 24px;border-radius:99px;font-size:.88rem;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn:hover{opacity:.85}
+.btn-del{background:none;border:1px solid #2a1a1a;color:#f87171;padding:6px 12px;border-radius:6px;font-size:.75rem;cursor:pointer;transition:background .2s}
+.btn-del:hover{background:#1a0a0a}
+
+/* HISTÓRICO */
+.history-list{display:flex;flex-direction:column;gap:10px}
+.entry-card{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:16px}
+.entry-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.entry-date{font-size:.75rem;color:var(--m);font-weight:600;letter-spacing:1px}
+.entry-bars{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+@media(max-width:400px){.entry-bars{grid-template-columns:1fr}}
+.mini-bar{display:flex;align-items:center;gap:8px;font-size:.75rem}
+.mini-label{color:var(--m);width:72px;flex-shrink:0}
+.mini-track{flex:1;height:4px;background:var(--b);border-radius:99px;overflow:hidden}
+.mini-fill{height:100%;border-radius:99px;transition:width .6s}
+.mini-score{color:var(--t);font-weight:700;width:20px;text-align:right}
+.entry-note{font-size:.82rem;color:var(--m);margin-top:10px;font-style:italic;border-top:1px solid var(--b);padding-top:10px;line-height:1.6}
+.empty{text-align:center;color:var(--m);padding:48px 20px;font-size:.9rem;line-height:1.8}
+
+/* GRÁFICO */
+.chart-outer{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.chart-title{font-size:.72rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--m);margin-bottom:16px}
+canvas{width:100%!important;max-width:100%}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--m)}
+.leg-dot{width:8px;height:8px;border-radius:50%}
+.insight-box{background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.2);border-radius:var(--r);padding:16px 20px;margin-bottom:12px}
+.insight-box .head{font-size:.68rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:10px}
+.insight-box p{font-size:.88rem;color:var(--m);line-height:1.65}
+.insight-box p strong{color:var(--t)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>TraçoLoop — <span class="accent">Evolução dos seus traços</span></h1>
+  <p class="sub">Registre seu estado diário em 6 dimensões. Com o tempo, os padrões aparecem — quando você está no pico criativo, quando entra em baixa, o que muda você.</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('checkin')">+ Check-in</button>
+    <button class="tab" onclick="showTab('historico')">Histórico</button>
+    <button class="tab" onclick="showTab('evolucao')">Evolução</button>
+  </div>
+
+  <!-- CHECK-IN -->
+  <div id="tab-checkin" class="pane active">
+    <div class="date-row">
+      <div class="field"><label>Data</label><input type="date" id="ci-date"/></div>
+    </div>
+    <div class="checkin-grid" id="sliders"></div>
+    <button class="btn" onclick="saveCheckin()">Salvar check-in</button>
+    <div id="save-msg" style="margin-top:12px;font-size:.82rem;color:var(--g);display:none">✓ Salvo com sucesso</div>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div id="tab-historico" class="pane">
+    <div id="history-list" class="history-list"></div>
+  </div>
+
+  <!-- EVOLUÇÃO -->
+  <div id="tab-evolucao" class="pane">
+    <div class="chart-outer">
+      <div class="chart-title">Evolução por dimensão (últimos 30 registros)</div>
+      <canvas id="evo-chart" height="260"></canvas>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div id="insights-area"></div>
+  </div>
+</div>
+
+<script>
+const DIMS = [
+  {k:'energia',  l:'Energia',    c:'#38bdf8'},
+  {k:'foco',     l:'Foco',       c:'#a78bfa'},
+  {k:'criativo', l:'Criativo',   c:'#f472b6'},
+  {k:'humor',    l:'Humor',      c:'#34d399'},
+  {k:'clareza',  l:'Clareza',    c:'#f59e0b'},
+  {k:'motivacao',l:'Motivação',  c:'#fb923c'},
+];
+
+// Init
+const todayStr = new Date().toISOString().split('T')[0];
+document.getElementById('ci-date').value = todayStr;
+
+const sg = document.getElementById('sliders');
+DIMS.forEach(d => {
+  const div = document.createElement('div');
+  div.className = 'field';
+  div.innerHTML = `<label>${d.l}</label>
+    <div class="range-wrap">
+      <input type="range" min="1" max="10" value="5" id="r-${d.k}"
+        oninput="document.getElementById('v-${d.k}').textContent=this.value"
+        style="accent-color:${d.c}">
+      <span class="range-val" id="v-${d.k}">5</span>
+    </div>`;
+  sg.appendChild(div);
+});
+const ta = document.createElement('textarea');
+ta.id = 'ci-note'; ta.placeholder = 'Nota do dia (opcional) — o que foi diferente, o que aconteceu...';
+sg.appendChild(ta);
+
+function getEntries(){ try{ return JSON.parse(localStorage.getItem('traco_entries')||'[]') }catch{return[]} }
+function saveEntries(arr){ localStorage.setItem('traco_entries', JSON.stringify(arr)) }
+
+function saveCheckin(){
+  const date = document.getElementById('ci-date').value;
+  if(!date) return;
+  const entry = { date, note: document.getElementById('ci-note').value };
+  DIMS.forEach(d => entry[d.k] = parseInt(document.getElementById('r-'+d.k).value));
+  const arr = getEntries().filter(e => e.date !== date);
+  arr.push(entry);
+  arr.sort((a,b)=>b.date.localeCompare(a.date));
+  saveEntries(arr);
+  const msg = document.getElementById('save-msg');
+  msg.style.display='block';
+  setTimeout(()=>msg.style.display='none', 2000);
+}
+
+function deleteEntry(date){
+  saveEntries(getEntries().filter(e=>e.date!==date));
+  renderHistory(); renderEvo();
+}
+
+function renderHistory(){
+  const arr = getEntries();
+  const el = document.getElementById('history-list');
+  if(!arr.length){ el.innerHTML='<div class="empty">Nenhum check-in ainda.<br>Registre seu primeiro pelo botão "+ Check-in".</div>'; return; }
+  el.innerHTML = arr.map(e=>`
+    <div class="entry-card">
+      <div class="entry-header">
+        <span class="entry-date">${formatDate(e.date)}</span>
+        <button class="btn-del" onclick="deleteEntry('${e.date}')">remover</button>
+      </div>
+      <div class="entry-bars">
+        ${DIMS.map(d=>`
+          <div class="mini-bar">
+            <span class="mini-label">${d.l}</span>
+            <div class="mini-track"><div class="mini-fill" style="width:${e[d.k]*10}%;background:${d.c}"></div></div>
+            <span class="mini-score">${e[d.k]}</span>
+          </div>`).join('')}
+      </div>
+      ${e.note?`<div class="entry-note">"${e.note}"</div>`:''}
+    </div>`).join('');
+}
+
+function formatDate(s){
+  const [y,m,d]=s.split('-');
+  const names=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return `${d} ${names[+m-1]} ${y}`;
+}
+
+function renderEvo(){
+  const arr = getEntries().slice(0,30).reverse();
+  const canvas = document.getElementById('evo-chart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 800, H = 260;
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0,0,W,H);
+
+  if(arr.length < 2){
+    ctx.fillStyle='rgba(92,92,122,0.5)'; ctx.font='14px system-ui';
+    ctx.textAlign='center'; ctx.fillText('Registre pelo menos 2 check-ins para ver o gráfico',W/2,H/2);
+    return;
+  }
+
+  const pad={t:20,r:20,b:30,l:30};
+  const gW=W-pad.l-pad.r, gH=H-pad.t-pad.b;
+
+  // Grid lines
+  [2,4,6,8,10].forEach(v=>{
+    const y=pad.t+gH-(v/10*gH);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+gW,y);
+    ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle='rgba(92,92,122,0.6)'; ctx.font='10px system-ui';
+    ctx.textAlign='right'; ctx.fillText(v,pad.l-6,y+4);
+  });
+
+  DIMS.forEach(d=>{
+    ctx.beginPath();
+    arr.forEach((e,i)=>{
+      const x=pad.l+(i/(arr.length-1))*gW;
+      const y=pad.t+gH-((e[d.k]-1)/9*gH);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle=d.c; ctx.lineWidth=2; ctx.stroke();
+    // dots
+    arr.forEach((e,i)=>{
+      const x=pad.l+(i/(arr.length-1))*gW;
+      const y=pad.t+gH-((e[d.k]-1)/9*gH);
+      ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2);
+      ctx.fillStyle=d.c; ctx.fill();
+    });
+  });
+
+  // X labels (some)
+  const step=Math.max(1,Math.floor(arr.length/6));
+  arr.forEach((e,i)=>{
+    if(i%step!==0 && i!==arr.length-1) return;
+    const x=pad.l+(i/(arr.length-1))*gW;
+    const parts=e.date.split('-');
+    ctx.fillStyle='rgba(92,92,122,0.7)'; ctx.font='9px system-ui';
+    ctx.textAlign='center'; ctx.fillText(`${parts[2]}/${parts[1]}`,x,H-8);
+  });
+
+  // Legend
+  const lg=document.getElementById('legend');
+  lg.innerHTML=DIMS.map(d=>`<div class="leg-item"><div class="leg-dot" style="background:${d.c}"></div>${d.l}</div>`).join('');
+
+  // Insights
+  renderInsights(arr);
+}
+
+function renderInsights(arr){
+  if(arr.length < 5){ document.getElementById('insights-area').innerHTML=''; return; }
+  const avgs={};
+  DIMS.forEach(d=>{ avgs[d.k]=arr.reduce((a,e)=>a+e[d.k],0)/arr.length; });
+
+  const top=DIMS.slice().sort((a,b)=>avgs[b.k]-avgs[a.k]);
+  const best=top[0], worst=top[top.length-1];
+
+  const recents=arr.slice(-7);
+  const trends={};
+  DIMS.forEach(d=>{
+    const old=arr.slice(0,Math.floor(arr.length/2));
+    const rec=arr.slice(Math.floor(arr.length/2));
+    const oldA=old.reduce((a,e)=>a+e[d.k],0)/old.length;
+    const recA=rec.reduce((a,e)=>a+e[d.k],0)/rec.length;
+    trends[d.k]=recA-oldA;
+  });
+  const rising=DIMS.filter(d=>trends[d.k]>0.5).sort((a,b)=>trends[b.k]-trends[a.k]);
+  const falling=DIMS.filter(d=>trends[d.k]<-0.5).sort((a,b)=>trends[a.k]-trends[b.k]);
+
+  let html='';
+  html+=`<div class="insight-box"><div class="head">Sua dimensão mais estável</div>
+    <p>Sua maior média histórica é <strong>${best.l} (${avgs[best.k].toFixed(1)}/10)</strong>. Isso é seu estado base — o que retorna mesmo após períodos difíceis.</p></div>`;
+  if(rising.length) html+=`<div class="insight-box"><div class="head">Em alta recente</div>
+    <p>${rising.map(d=>`<strong>${d.l} (+${trends[d.k].toFixed(1)})</strong>`).join(', ')} — tendência positiva na segunda metade dos seus registros.</p></div>`;
+  if(falling.length) html+=`<div class="insight-box"><div class="head">Em queda recente</div>
+    <p>${falling.map(d=>`<strong>${d.l} (${trends[d.k].toFixed(1)})</strong>`).join(', ')} — dimensão que merece atenção. O que mudou neste período?</p></div>`;
+  document.getElementById('insights-area').innerHTML=html;
+}
+
+function showTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['checkin','historico','evolucao'][i]===id));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='historico') renderHistory();
+  if(id==='evolucao') renderEvo();
+}
+</script>
+</body>
+</html>
